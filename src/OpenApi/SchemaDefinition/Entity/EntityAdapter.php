@@ -2,9 +2,11 @@
 
 namespace Apitte\OpenApi\SchemaDefinition\Entity;
 
+use Apitte\Core\Annotation\Controller\Ref;
 use Apitte\Core\Exception\Logical\InvalidArgumentException;
 use Apitte\Core\Exception\Logical\InvalidStateException;
 use DateTimeInterface;
+use Doctrine\Common\Annotations\AnnotationReader;
 use Nette\Utils\Reflection;
 use Nette\Utils\Strings;
 use Nette\Utils\Type;
@@ -23,6 +25,10 @@ class EntityAdapter implements IEntityAdapter
 	 */
 	public function getMetadata(string $type): array
 	{
+		if (($ref = $this->getRef($type)) !== null) {
+			return ['$ref' => $ref];
+		}
+
 		// Ignore brackets (not supported by schema)
 		$type = str_replace(['(', ')'], '', $type);
 
@@ -257,6 +263,35 @@ class EntityAdapter implements IEntityAdapter
 		];
 
 		return $map[strtolower($type)] ?? $type;
+	}
+
+	private function getRef(string $type): ?string
+	{
+		if (!class_exists($type)) {
+			return null;
+		}
+
+		$reflection = new ReflectionClass($type);
+
+		if (PHP_VERSION_ID >= 80000) {
+			$attribute = $reflection->getAttributes(Ref::class);
+
+			if (count($attribute) > 0) {
+				/** @var Ref $ref */
+				$ref = $attribute[0]->newInstance();
+				return $ref->getReference();
+			}
+		}
+
+		$annotationReader = new AnnotationReader();
+		/** @var Ref|null $annotation */
+		$annotation = $annotationReader->getClassAnnotation($reflection, Ref::class);
+
+		if ($annotation !== null) {
+			return $annotation->getReference();
+		}
+
+		return null;
 	}
 
 }

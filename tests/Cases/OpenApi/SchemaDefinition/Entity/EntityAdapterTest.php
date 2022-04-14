@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Tester\Assert;
 use Tester\TestCase;
+use Tests\Fixtures\ResponseEntity\AnnotationReferenceEntity;
 use Tests\Fixtures\ResponseEntity\CompoundResponseEntity;
 use Tests\Fixtures\ResponseEntity\NativeIntersectionEntity;
 use Tests\Fixtures\ResponseEntity\NativeUnionEntity;
@@ -257,6 +258,30 @@ final class EntityAdapterTest extends TestCase
 				],
 			],
 			$adapter->getMetadata(NativeIntersectionEntity::class)
+		);
+	}
+
+	public function testAnnotationReferenceEntity(): void
+	{
+		$adapter = new EntityAdapter();
+
+		Assert::same(
+			['$ref' => '#/components/schema/foo'],
+			$adapter->getMetadata(AnnotationReferenceEntity::class)
+		);
+	}
+
+	public function testAttributeReferenceEntity(): void
+	{
+		if (PHP_VERSION_ID < 80000) {
+			$this->skip();
+		}
+
+		$adapter = new EntityAdapter();
+
+		Assert::same(
+			['$ref' => '#/components/schema/foo'],
+			$adapter->getMetadata(AnnotationReferenceEntity::class)
 		);
 	}
 
